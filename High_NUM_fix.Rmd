@@ -1,0 +1,84 @@
+---
+title: "High_NUM_fix"
+author: "Andrea Ovalle"
+date: "4/30/2017"
+output: 
+html_document:
+  code_folding: show
+---
+
+# This code will find the individuals with disproportionate amount of fixations, and will provide information about how many fixations are there per trial. 
+# The data use in this code is =  see exp1a_fixationreport (1).csv
+
+```{r, eval=FALSE, include=FALSE}
+## All of these packages need to be uploaded for the code to work.
+install.packages("dplyr",repos = "http://cran.rstudio.com/") ## No need to download each package everytime that you start the session
+install.packages("ggplot", repos = "http://cran.rstudio.com/")
+install.packages("plotly", repos = "http://cran.rstudio.com/")
+install.packages("devtools")
+devtools::install_github("hadley/ggplot2")
+load("~/Dropbox (HSPH)/VCA LAB/Seque_Data.rda")
+
+```
+
+
+```{r, message=FALSE, warning=FALSE}
+require(dplyr)
+require(ggplot2)
+require(plotly) # Interactive graphing 
+```
+
+```{r setup, include=FALSE}
+#Seque_Data <- read.csv("~/Dropbox/VCA LAB/exp1a_fixationreport (1).csv")
+#save(Seque_Data,file = "~/Dropbox/VCA LAB/Seque_Data.rda")
+Seque_Data_1 <- Seque_Data %>% select(TRIAL_LABEL,CURRENT_FIX_INDEX,CURRENT_FIX_INTEREST_AREAS,NEXT_FIX_NEAREST_INTEREST_AREA, RECORDING_SESSION_LABEL,trial,TRIAL_FIXATION_TOTAL) ## This code selects the columns that I am most interested in.
+
+colnames(Seque_Data_1)[colnames(Seque_Data_1)=="RECORDING_SESSION_LABEL"]<-"Subject" # changes the name of x column.
+
+
+```
+
+
+```{r}
+## Gets the number of fixations per subject
+Num_df <- Seque_Data_1 %>%
+  select(Subject, trial)%>%
+  group_by(Subject)%>%
+  summarise(Total_per_sub = n())%>%
+  arrange(desc(Total_per_sub))
+head(Num_df)
+```
+
+```{r}
+# Gets the Number of fixations per trial 
+Num_df_trial <- Seque_Data_1 %>%
+  select(Subject, trial)%>%
+  group_by(Subject, trial)%>%
+  summarise(Total_per_trial = n())%>%
+  arrange(desc(Subject))
+head(Num_df_trial)
+
+```
+
+```{r}
+## Function that quickly gets the number of fixations, works with Seque_data_1
+
+Num_Fix <- function(data, Subject_arg , trial_arg) {
+   data%>%
+   filter(Subject == Subject_arg, trial == trial_arg)%>%
+     group_by(TRIAL_LABEL)%>%
+     summarise(Total_per_trial=n())
+ 
+}
+Num_Fix(Seque_Data_1, "sub18", "3")
+```
+
+```{r}
+## Plots the the counts of fixations per trial per subject. 
+m<-ggplot(Num_df_trial, aes(x = trial, y = Total_per_trial, color= Subject))+ geom_point() + theme(axis.title.y = element_text(size = rel(1.5)))+theme(axis.title.x = element_text(size = rel(1.5)))+theme(legend.key = element_rect(size = rel(1.5)))+theme(axis.text = element_text(size = 15))
+
+ggplotly(m) # Interactive graph, place the cursor on top and you will get the information about that data point !!
+```
+
+
+
